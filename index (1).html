@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0d" />
+  <meta name="description" content="flkr — a pure visual feed of images + true facts. Curated. Offline-first." />
+  <title>flkr · images + true facts</title>
+
+  <!-- Inline the icon as SVG data URI to avoid an extra HTTP request -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0a0d'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='34' fill='%23ff4d6d'%3Ef%3C/text%3E%3C/svg%3E" />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Preload datasets (synchronous, ~80KB) so the first paint has them -->
+  <script src="data/facts.js" defer></script>
+  <script src="data/ads.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+  <!-- ============ STICKY HEADER ============ -->
+  <header class="hdr" role="banner">
+    <div class="hdr__row">
+      <div class="hdr__brand" aria-label="flkr home">
+        <span class="hdr__logo">flkr</span>
+        <span class="hdr__tag">images + true facts</span>
+      </div>
+
+      <div class="hdr__actions">
+        <button id="likesToggle" class="iconbtn" aria-pressed="false" aria-label="Show only liked facts" title="Show only liked facts">
+          <svg class="icon icon--heart" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 21s-7.5-4.6-10-9.3C.6 8.3 2.5 5 6 5c2 0 3.3 1 4 2 .7-1 2-2 4-2 3.5 0 5.4 3.3 4 6.7C19.5 16.4 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <button id="adminBtn" class="iconbtn iconbtn--admin" aria-label="Admin login" title="Admin">
+          <svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 2 4 5v6c0 5 3.4 9.5 8 11 4.6-1.5 8-6 8-11V5l-8-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="hdr__search">
+      <svg class="icon icon--search" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="search" type="search" inputmode="search" placeholder="Search facts…" autocomplete="off" spellcheck="false" aria-label="Search facts" />
+      <button id="searchClear" class="search-clear" hidden aria-label="Clear search">×</button>
+    </div>
+
+    <!-- horizontal-scroll category chips -->
+    <nav id="chips" class="chips" role="navigation" aria-label="Categories"></nav>
+  </header>
+
+  <!-- ============ FEED ============ -->
+  <main id="feed" class="feed" role="main" aria-live="polite" aria-busy="false"></main>
+
+  <div id="feedEnd" class="feed-end" hidden>
+    <p>You've reached the end of flkr. Pull down to refresh, or clear filters to see more.</p>
+  </div>
+
+  <!-- ============ FACT OVERLAY (slide-up sheet) ============ -->
+  <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="overlayText">
+    <div class="overlay__scrim" data-close></div>
+    <article class="overlay__sheet" role="document">
+      <button class="overlay__grip" data-close aria-label="Close fact sheet"></button>
+      <p id="overlayText" class="overlay__text"></p>
+      <a id="overlaySource" class="overlay__src" target="_blank" rel="noopener noreferrer">View source ↗</a>
+      <div class="overlay__actions">
+        <button id="overlayCopy" class="btn btn--ghost">Copy fact</button>
+        <button id="overlayShare" class="btn btn--ghost">Share</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- ============ TOAST ============ -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ============ ADMIN MODAL ============ -->
+  <div id="adminModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+    <div class="modal__scrim" data-admin-close></div>
+    <div class="modal__panel" role="document">
+      <header class="modal__head">
+        <h2 id="adminTitle">Admin · add fact</h2>
+        <button class="modal__x" data-admin-close aria-label="Close">×</button>
+      </header>
+
+      <!-- Login form (shown when not authenticated) -->
+      <form id="loginForm" class="form">
+        <label class="field">
+          <span>Email</span>
+          <input name="email" type="email" required autocomplete="username" />
+        </label>
+        <label class="field">
+          <span>Password (fallback: flkr2026)</span>
+          <input name="password" type="password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn btn--primary">Send OTP</button>
+        <p class="form__hint" id="loginHint">An OTP code will be emailed to the admin inbox. Enter it below after sending.</p>
+
+        <label class="field" id="otpFieldWrap" hidden>
+          <span>OTP code (6 digits)</span>
+          <input name="otp" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" />
+        </label>
+        <button type="button" id="otpVerifyBtn" class="btn btn--primary" hidden>Verify & log in</button>
+      </form>
+
+      <!-- Authenticated: add fact via JSON paste -->
+      <form id="addFactForm" class="form" hidden>
+        <p class="form__hint">Paste a JSON fact object. Schema: <code>{ "text": "...", "category": "...", "sourceUrl": "https://...", "imageSeed": "..." }</code></p>
+        <label class="field">
+          <span>Fact JSON</span>
+          <textarea id="factJson" rows="6" spellcheck="false" placeholder='{"text":"Honey never spoils.","category":"Food","sourceUrl":"https://example.com","imageSeed":"honey-001"}'></textarea>
+        </label>
+        <button type="submit" class="btn btn--primary">Add fact</button>
+        <button type="button" id="logoutBtn" class="btn btn--ghost">Log out</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Service worker registration (deferred) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (err) {
+          console.warn('[sw] registration failed:', err.message);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
