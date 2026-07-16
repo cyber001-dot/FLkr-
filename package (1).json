@@ -1,0 +1,16 @@
+{
+  "name": "flkr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "flkr — images + true facts. Mobile-first vanilla JS frontend + Express backend.",
+  "scripts": {
+    "dev": "PORT=3000 node backend/server.js",
+    "start": "PORT=3000 node backend/server.js",
+    "seed": "node backend/seed.js",
+    "linkcheck": "node scripts/link-checker.js",
+    "test": "node scripts/integration-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

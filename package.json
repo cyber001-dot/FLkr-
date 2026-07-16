@@ -1,0 +1,29 @@
+{
+  "name": "flkr-backend",
+  "version": "1.0.0",
+  "description": "Secure backend for flkr — admin auth (OTP), facts/ads CRUD, async logging, rate limiting.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js",
+    "linkcheck": "node ../scripts/link-checker.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.14",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  }
+}
